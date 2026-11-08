@@ -173,6 +173,21 @@ h2{font-family:var(--f-display);font-weight:400;font-size:21px;margin:6px 2px -4
 .res-list .up{color:var(--good);font-weight:700} .res-list .down{color:var(--bad);font-weight:700}
 .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .back{color:var(--muted);font-size:15px;padding:6px 0}
+.exit{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:17px;display:grid;place-items:center;flex:none;color:var(--ink)}
+.exit:hover{border-color:var(--bad);color:var(--bad)}
+.stitle{font-family:var(--f-display);font-size:20px;margin:-6px 2px 0;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.stitle small{font-family:var(--f-body);font-size:13px;color:var(--muted)}
+.focus{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bad-soft);border-radius:16px;padding:12px 14px;text-align:start;width:100%}
+.focus b{display:block;font-size:16px}
+.focus small{color:var(--muted);font-size:13.5px}
+.focus .go{background:var(--bad);color:#fff;border-radius:10px;padding:8px 12px;font-weight:700;font-size:14px;white-space:nowrap}
+.goal{grid-column:1/-1;display:grid;gap:6px}
+.goal-row{display:flex;justify-content:space-between;font-size:14px;font-weight:600}
+.goal-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden}
+.goal-bar i{display:block;height:100%;background:var(--mark);border-radius:99px}
+:root[data-theme="dark"] .goal-bar i{background:#ffd84a}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .goal-bar i{background:#ffd84a} }
+.kbd{font-size:12px;color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20}
 @media (max-width:380px){ .modes{grid-template-columns:1fr} .hello{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -259,6 +274,8 @@ function home(){
   speechSynthesis&&speechSynthesis.cancel&&speechSynthesis.cancel();
   const W=WORDS(), k=known(), pct=W.length?k/W.length:0, st=streak(), C=2*Math.PI*42;
   const modes=MODES.filter(m=>!(m.need==="sr"&&!SR));
+  const hard=W.filter(w=>lv(w)<3).sort((a,b)=>lv(a)-lv(b));
+  if(location.hash==="#practice") history.replaceState(null,"",location.pathname+location.search);
   app.innerHTML=`
   <div class="top"><div class="brand">המילים של אלונה<small>אוצר מילים באנגלית</small></div>
     <div class="row"><button class="iconbtn" id="slow" aria-label="מהירות הקראה" title="מהירות הקראה">${S.slow?"🐢":"🔊"}</button><button class="iconbtn" id="theme" aria-label="מצב תצוגה">🌓</button></div></div>
@@ -268,7 +285,9 @@ function home(){
       <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10"/><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}"/></svg>
       <div class="num"><b>${k}/${W.length}</b><span>יודעת</span></div></div>
     <div class="chips"><span class="chip">${st?`🔥 ${st} ${st===1?"יום":"ימים"} ברצף`:"היום עוד לא תרגלנו"}</span><span class="chip">${W.length} מילים ברשימה</span></div>
+    <div class="goal"><div class="goal-row"><span>יעד יומי</span><span class="en">${Math.min(daily(),GOAL)}/${GOAL}</span></div><div class="goal-bar"><i style="width:${Math.min(100,daily()/GOAL*100)}%"></i></div></div>
   </section>
+  ${hard.length&&hard.length<W.length?`<button class="focus" id="hard"><span><b>${hard.length} מילים שעוד לא יושבות</b><small>${hard.slice(0,4).map(w=>w.en).join(", ")}${hard.length>4?"…":""}</small></span><span class="go">לתרגל רק אותן</span></button>`:""}
   <button class="smart" id="smart"><span class="ic">✨</span><span><b>חזרה חכמה</b><small>תרגול מעורב של 12 שאלות, עם דגש על המילים שעוד לא יושבות</small></span></button>
   <h2>דרכים ללמוד</h2>
   <div class="modes">${modes.map(m=>`<button class="mode" data-mode="${m.id}"><span class="ic">${m.ic}</span><b>${m.t}</b><small>${m.d}</small></button>`).join("")}</div>
@@ -286,6 +305,7 @@ function home(){
     <button class="btn sm" id="addBtn">הוספה לרשימה</button></details>
   <button class="back" id="reset">איפוס ההתקדמות</button>`;
   $("#smart").onclick=()=>start("smart");
+  const hb=$("#hard"); if(hb) hb.onclick=()=>start("smart",hard,"המילים הקשות");
   app.querySelectorAll(".mode").forEach(b=>b.onclick=()=>start(b.dataset.mode));
   app.querySelectorAll("[data-say]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); say(b.dataset.say); });
   app.querySelectorAll(".w-head").forEach(h=>{ const go=()=>{ const i=+h.dataset.i; open=open===i?null:i; home(); }; h.onclick=go; h.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }; });
@@ -303,27 +323,47 @@ function home(){
 /* ---------- sessions ---------- */
 let R=null; // current session
 function shell(title,inner){
-  app.innerHTML=`<div class="bar"><button class="back" id="quit">→ ${title}</button><div class="prog"><i id="pg"></i></div><span class="count" id="cnt"></span></div>${inner}`;
-  $("#quit").onclick=home;
+  if(location.hash==="#practice") history.replaceState({s:1},"","#practice"); else history.pushState({s:1},"","#practice");
+  app.innerHTML=`<div class="bar"><button class="exit" id="quit" aria-label="יציאה לדף הראשי" title="יציאה לדף הראשי">✕</button><div class="prog"><i id="pg"></i></div><span class="count" id="cnt"></span></div>
+    <div class="stitle">${title}<small>אפשר לצאת בכל רגע, ההתקדמות נשמרת</small></div>${inner}`;
+  $("#quit").onclick=exitSession;
+  window.scrollTo(0,0);
 }
+function exitSession(){
+  if(R&&R.log&&R.log.length&&!R.done) toast("ההתקדמות נשמרה");
+  R=null;
+  if(history.state&&history.state.s) history.back(); else home();
+}
+window.addEventListener("popstate",()=>{ if(location.hash!=="#practice"){ R=null; home(); } });
+document.addEventListener("keydown",e=>{
+  if(location.hash!=="#practice") return;
+  if(e.key==="Escape"){ e.preventDefault(); exitSession(); return; }
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA") return;
+  const opts=[...document.querySelectorAll(".opt:not([disabled])")];
+  if(/^[1-4]$/.test(e.key)&&opts[+e.key-1]){ opts[+e.key-1].click(); return; }
+  if(e.key==="Enter"){ const nx=$("#nx"); if(nx){ e.preventDefault(); nx.click(); } }
+});
 function progress(){ $("#pg").style.width=(R.i/R.n*100)+"%"; $("#cnt").textContent=`${Math.min(R.i+1,R.n)}/${R.n}`; }
-function record(w,ok){ const d=bump(w,ok); R.log.push({w,ok,d}); if(ok) R.score++; }
+function record(w,ok){ const d=bump(w,ok); R.log.push({w,ok,d}); if(ok) R.score++; dailyTick(); }
+const GOAL=20;
+function daily(){ return S.daily&&S.daily.d===today()?S.daily.n:0; }
+function dailyTick(){ const n=daily()+1; S.daily={d:today(),n}; save(); if(n===GOAL) setTimeout(()=>toast("עמדת ביעד היומי! 🎉"),400); }
 
-function start(mode){
+function start(mode,custom,ctitle){
   const W=WORDS();
   if(!W.length) return toast("אין מילים ברשימה");
   if(mode==="cards") return cards();
   if(mode==="match") return match();
   if(mode==="speak") return speak();
-  const n = mode==="smart"?12 : mode==="spell"?8 : 10;
-  let pool=W; if(mode==="sent") pool=W.filter(w=>w.s);
+  const n = custom ? Math.min(12,Math.max(6,custom.length*2)) : mode==="smart"?12 : mode==="spell"?8 : 10;
+  let pool=custom||W; if(mode==="sent") pool=pool.filter(w=>w.s);
   if(mode==="sent"&&pool.length<2) return toast("אין מספיק משפטים לתרגול");
   const list=weighted(pool,n).map(w=>{ let type=mode;
     if(mode==="smart"){ const types=["listen","he2en","spell"]; if(w.s) types.push("sent"); type=types[Math.floor(Math.random()*types.length)]; }
     return {w,type}; });
-  R={mode,list,i:0,n:list.length,score:0,log:[]};
+  R={mode,list,i:0,n:list.length,score:0,log:[],custom,ctitle};
   const titles={listen:"שמעי ובחרי",he2en:"מעברית לאנגלית",spell:"כתיבה",sent:"השלמת משפט",smart:"חזרה חכמה"};
-  shell(titles[mode],`<div class="stage" id="stage"></div>`);
+  shell(ctitle||titles[mode],`<div class="stage" id="stage"></div>`);
   ask();
 }
 function ask(){
@@ -338,7 +378,7 @@ function ask(){
     prompt=`<div class="q-label">איך אומרים באנגלית?</div><div class="q-he">${esc(w.he)}</div>`; }
   if(type==="sent"){ key="en"; opts=shuffle([w.en,...distract(w,"en",3)]);
     prompt=`<div class="q-label">איזו מילה חסרה?</div><div class="q-sent en">${esc(w.s).replace("___",'<span class="blank"></span>')}</div>`; }
-  st.innerHTML=prompt+`<div class="opts">${opts.map(o=>`<button class="opt ${key==="en"?"en":""}">${esc(o)}</button>`).join("")}</div><div id="fb" style="width:100%"></div>`;
+  st.innerHTML=prompt+`<div class="opts">${opts.map(o=>`<button class="opt ${key==="en"?"en":""}">${esc(o)}</button>`).join("")}</div>${matchMedia("(hover:hover)").matches?'<div class="kbd">במקלדת: 1-4 לבחירה, Enter להמשך, Esc ליציאה</div>':""}<div id="fb" style="width:100%"></div>`;
   if(type==="listen"){ $("#sp").onclick=()=>say(w.en); $("#sl").onclick=()=>say(w.en,true); setTimeout(()=>say(w.en),250); }
   st.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
     const ok=b.textContent===w[key];
@@ -466,14 +506,18 @@ function result(){
   const n=R.log.length, s=R.score, pct=n?s/n:0;
   const head = pct>=.9?"מושלם, אלונה!":pct>=.7?"עבודה מצוינת!":pct>=.4?"התקדמות יפה":"כל תרגול מקרב";
   const seen=[...new Map(R.log.map(x=>[x.w.en,x])).values()];
+  const missed=[...new Map(R.log.filter(x=>!x.ok).map(x=>[x.w.en,x.w])).values()];
+  R.done=true;
   app.innerHTML=`<section class="res">
     <div class="big">${head}</div>
     ${R.mode==="match"?`<div class="score">${R.time.toFixed(1)}s</div><div class="small">${R.record?"שיא אישי חדש!":`השיא: ${S.best.match.toFixed(1)} שניות`}</div>`:`<div class="score">${s}/${n}</div>`}
     <div class="small">את יודעת עכשיו ${known()} מתוך ${WORDS().length} מילים</div>
     <div class="res-list">${seen.map(x=>`<div><span><button class="play" data-say="${esc(x.w.en)}" aria-label="השמעה" style="display:inline-grid;vertical-align:middle;margin-inline-end:8px">🔊</button><span class="en">${esc(x.w.en)}</span> · ${esc(x.w.he)}</span><span class="${x.ok?"up":"down"}">${x.ok?"✓":"לחזור"}</span></div>`).join("")}</div>
-    <div class="btns"><button class="btn" id="again">עוד סבב</button><button class="btn alt" id="home">לעמוד הראשי</button></div></section>`;
+    <div class="btns">${missed.length?`<button class="btn" id="miss">תרגול הטעויות (${missed.length})</button>`:""}<button class="btn ${missed.length?"alt":""}" id="again">עוד סבב</button><button class="btn alt" id="home">לעמוד הראשי</button></div></section>`;
   app.querySelectorAll("[data-say]").forEach(b=>b.onclick=()=>say(b.dataset.say));
-  const m=R.mode; $("#again").onclick=()=>start(m); $("#home").onclick=home;
+  const m=R.mode, cu=R.custom, ct=R.ctitle;
+  $("#again").onclick=()=>start(m,cu,ct); $("#home").onclick=exitSession;
+  const mb=$("#miss"); if(mb) mb.onclick=()=>start("smart",missed,"תרגול הטעויות");
 }
 
 // "next" inside feedback: speak mode uses its own loop
